@@ -1,10 +1,21 @@
 import os
+import logging
 
 import pystache
 import yaml
 import json
+import colorlog
 
 from invoke import task
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(colorlog.ColoredFormatter(
+    '%(log_color)s%(levelname)s %(message)s')
+)
+
+logger = colorlog.getLogger('')
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 ENV_FILE     = ".env.tasks"
 DEVICES_FILE = 'devices.yml'
@@ -32,18 +43,18 @@ def target(c, mcu):
 
     if 'mcu' in env_read().keys():
         if env_read()['mcu'] == mcu:
-            print("INFO: Target already set to {}".format(mcu))
+            logging.info("Target already set to {}".format(mcu))
             return
 
     data = yaml.load(open(DEVICES_FILE, 'r'))
     meta = {'mcu': mcu}
 
     if mcu not in data.keys():
-        print("ERROR: MCU '{}' is not recognized. Select from:".format(mcu))
-        print("  " + ", ".join(sorted(data.keys())))
+        keys = ", ".join(sorted(data.keys()))
+        logging.error("MCU '{}' is not recognized. Select from: [{}]".format(mcu, keys))
         return
 
-    print("INFO: Changing target to {}".format(mcu))
+    logging.info("INFO: Changing target to {}".format(mcu))
     env_save(dict(mcu=mcu))
 
     with open('memory.x.mustache') as input_file:
@@ -121,12 +132,14 @@ def run(c, program, env, stop=False):
 
         cmd.append("-kernel {}".format(path))
 
+        logger.info("--- Starting QEMU ---")
         c.run(" ".join(cmd))
 
 @task(help={'program': "Program or example to build & run."})
 def build(c, program):
     """Build the specified program or example"""
 
+    logger.info("--- Building {} ---".format(program))
     c.run("cargo build --example {}".format(program), pty=True)
 
     env  = env_read()
@@ -142,8 +155,16 @@ def build(c, program):
 @task
 def debug(c):
     """Enter the debugger for the most recent build"""
-    env  = env_read()
-    c.run("arm-none-eabi-gdb -q {}".format(env['elf']), pty=True)
+    env = env_read()
+
+    cmd = []
+    cmd.append("arm-none-eabi-gdb")
+    cmd.append("-nx")
+    cmd.append("-ex 'target remote :3333'")
+    cmd.append("-q {}".format(env['elf']))
+
+    logger.info("--- Starting Debugger ---")
+    c.run(" ".join(cmd), pty=True)
 
 @task
 def clean(c):
