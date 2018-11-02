@@ -2,7 +2,7 @@
 authors = ["{{authors}}"]
 edition = "2018"
 readme = "README.md"
-name = "{{project-name}}"
+name = "cortex-m-quickstart"
 version = "0.1.0"
 
 [dependencies]
@@ -24,7 +24,7 @@ panic-halt = "0.2.0"
 
 # this lets you use `cargo fix`!
 [[bin]]
-name = "{{project-name}}"
+name = "cortex-m-quickstart"
 test = false
 bench = false
 
