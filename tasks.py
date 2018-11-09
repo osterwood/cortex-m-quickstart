@@ -54,7 +54,7 @@ def target(c, mcu):
         logging.error("MCU '{}' is not recognized. Select from: [{}]".format(mcu, keys))
         return
 
-    logging.info("INFO: Changing target to {}".format(mcu))
+    logging.info("Changing target to {}".format(mcu))
     env_save(dict(mcu=mcu))
 
     with open('memory.x.mustache') as input_file:
@@ -92,33 +92,19 @@ def target(c, mcu):
         for line in config:
             output_file.write(line + "\n")
 
-# TODO : how does this script know (in general) which MCU
-#        target is used for each operating environment?
+
 @task(help={
     'program': "Program or example to build & run.",
-    'env':     "Environment to run in.  Options: hw, qemu, jumper",
-    'stop':    "Stop execution immediately."
+    'stop':    "Stop execution immediately.",
+    'console': "Open console after starting execution.",
 })
-def run(c, program, env, stop=False):
-    """Run a program or example in an environment"""
-
-    if env == 'qemu':
-        target(c, 'qemu')
-    elif env == 'hw':
-        target(c, 'stm32f042')
-    elif env == 'jumper':
-        target(c, 'stm32f401')
-    else:
-        print("ERROR: Environment '{}' is not known".format(env))
-        return
-
-    ## Save the current environment so that later steps
-    ## know where we're running the program / example
-    env_save(merge(env_read(), dict(env=env)))
+def run(c, program, stop=False, console=False):
+    """Run a program or example in the current environment"""
 
     path = build(c, program)
+    mcu  = env_read()['mcu']
 
-    if env == 'qemu':
+    if mcu == 'qemu':
         cmd = []
         cmd.append("qemu-system-arm")
         cmd.append("-cpu cortex-m3")
@@ -134,6 +120,22 @@ def run(c, program, env, stop=False):
 
         logger.info("--- Starting QEMU ---")
         c.run(" ".join(cmd))
+
+    else:
+        cmd = []
+        cmd.append("bobbin")
+        cmd.append("run")
+
+        if not console:
+            cmd.append("--no-console")
+
+        cmd.append("--example {}".format(program))
+
+        logger.info("--- Flashing ---")
+        c.run(" ".join(cmd))
+        
+        
+
 
 @task(help={'program': "Program or example to build & run."})
 def build(c, program):
