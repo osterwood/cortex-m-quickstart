@@ -14,3 +14,11 @@ stm32f401re:
   flash: {length: 512K, origin: '0x08000000'}
   ram: {length: 96K, origin: '0x20000000'}
   target: thumbv7em-none-eabi
+stm32f103cb:
+  flash: {length: 128K, origin: '0x08000000'}
+  ram: {length: 20K, origin: '0x20000000'}
+  target: thumbv7em-none-eabi
+stm32f410cb:
+  flash: {length: 128K, origin: '0x08000000'}
+  ram: {length: 32K, origin: '0x20000000'}
+  target: thumbv7em-none-eabi
